@@ -187,11 +187,14 @@
         var i = puzzle_squares.length,
             j = 4,
             selected_piece,
-            potential_spaces;
+            potential_spaces,
+            // Firefox only recognised properties pageX/Y
+            eventX = e.offsetX || e.pageX, 
+            eventY = e.offsetY || e.pageY;
 	   
         // Find the piece that was clicked on
         while (i--) {
-            if (e.offsetX >= puzzle_squares[i].x && e.offsetX <= (puzzle_squares[i].x + piece_width) && e.offsetY >= puzzle_squares[i].y && e.offsetY <= (puzzle_squares[i].y + piece_height)) {
+            if (eventX >= puzzle_squares[i].x && eventX <= (puzzle_squares[i].x + piece_width) && eventY >= puzzle_squares[i].y && eventY <= (puzzle_squares[i].y + piece_height)) {
                 selected_piece = puzzle_squares[i];
                 i = puzzle_squares.length; // reset so we can loop array again
                 break;
