@@ -64,6 +64,13 @@
         loadImageOntoCanvas();
 	};
 	
+	function clearCanvas(){
+	   // This is a trick whereby resizing the <canvas> element causes the drawing space to be cleared
+	   // Easier than using the API's clearRect() method
+	   // e.g. context.clearRect(0, 0, canvas_width, canvas_height);
+	   canvas.width = canvas.width;
+	}
+	
 	function loadImageOntoCanvas(){
 		context.drawImage(img, 0, 0, canvas_width, canvas_height);
 		context.save();
@@ -78,7 +85,7 @@
         context.fillText(opening_message, (canvas_width / 2) - text_dimensions.width, (canvas_height / 2));
         
         // Initialise the game
-        canvas.addEventListener("click", init, false);
+        canvas.addEventListener("mousedown", init, false); // some touch devices delay 'click' event up to 300ms
         canvas.addEventListener("touchstart", init, false);
 	};
 	
@@ -88,13 +95,15 @@
     // Then we loop through the puzzle pieces again (but this time their in a random order) as we place each piece of the puzzle onto the canvas
     // Note: I find 'while' loops cleaner to read than for loops
 	function init(){
-        canvas.removeEventListener("click", init, false);
+        canvas.removeEventListener("mousedown", init, false);
         canvas.removeEventListener("touchstart", init, false);
-	
-        context.clearRect(0, 0, canvas_width, canvas_height);
+        clearCanvas();
+        
+        // Remove shadow (otherwise all puzzle pieces would get 
+        context.shadowOffsetX = 0;
+		context.shadowOffsetY = 0;
 	   
-        var current_square,
-            x_coord = 0,
+        var x_coord = 0,
             y_coord = 0,
             counter = 0,
             loop_length = canvas_grid * canvas_grid,
@@ -107,18 +116,19 @@
             
             while (counter < loop_length) {
                 if (!should_draw) {
-                    // Track each puzzle slice
-                    current_square = {
+                    puzzle_squares.push({
                         x: x_coord,
                         y: y_coord
-                    };
-                    puzzle_squares.push(current_square);
+                    });
                 }
                 
                 if (should_draw) {
+                    // Make sure shuffled array has reference (drawnOnCanvasX, drawnOnCanvasY) to where the puzzle piece has been drawn (randomly) onto the canvas
+                    puzzle_randomised[counter].drawnOnCanvasX = puzzle_squares[counter].x;
+                    puzzle_randomised[counter].drawnOnCanvasY = puzzle_squares[counter].y;
+                    
+//console.log("Piece " + counter + ": (puzzle_randomised[counter].x, puzzle_randomised[counter].y) ", puzzle_randomised[counter].x, puzzle_randomised[counter].y, " draw onto canvas at position: (puzzle_squares[counter].x, puzzle_squares[counter].y)", puzzle_squares[counter].x, puzzle_squares[counter].y);
                     // Draw puzzle slice
-                    puzzle_randomised[counter].drawnX = puzzle_squares[counter].x;
-                    puzzle_randomised[counter].drawnY = puzzle_squares[counter].y;
                     context.drawImage(img, puzzle_randomised[counter].x, puzzle_randomised[counter].y, piece_width, piece_height, puzzle_squares[counter].x, puzzle_squares[counter].y, piece_width, piece_height);
                 }
             
@@ -144,7 +154,8 @@
             // This function uses the "Fisher–Yates" shuffle (see: http://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle)
             // Following shuffle code was modified from _Underscore's "shuffle" method.
             var shuffled = [], 
-                rand;
+                rand,
+                counter = 0;
                 
             array.forEach(function (value, index, array) {
                 if (index == 0) {
@@ -169,7 +180,14 @@
         loop(true);
         
         // Randomly select a puzzle piece to remove (so user can move other pieces around)
-        random_piece = puzzle_randomised[Math.round(Math.random()*puzzle_randomised.length)];
+        random_piece = puzzle_randomised[Math.round(Math.random()*puzzle_randomised.length-1)];
+        
+        // About random calculation sometimes is returning undefined although I'm not sure why.
+        // I ran a loop of that code with a 1000 iterations and was unable to produce an undefined result.
+        // So as a temporary measure I've thrown in the following check to prevent an error.
+        if (!random_piece) {
+        	random_piece = puzzle_randomised[1];
+        }
         context.clearRect(random_piece.x, random_piece.y, piece_width, piece_height);
         
         // Keep track of empty space
@@ -178,8 +196,11 @@
             y: random_piece.y
         };
         
+//console.log("puzzle_squares: ", puzzle_squares);        
+//console.log("puzzle_randomised: ", puzzle_randomised);
+                
         // Let the user interact with the interface
-        canvas.addEventListener("click", startGame, false);
+        canvas.addEventListener("mousedown", startGame, false);
         canvas.addEventListener("touchstart", startGame, false);
 	}
 	
@@ -196,12 +217,12 @@
         while (i--) {
             if (eventX >= puzzle_squares[i].x && eventX <= (puzzle_squares[i].x + piece_width) && eventY >= puzzle_squares[i].y && eventY <= (puzzle_squares[i].y + piece_height)) {
                 selected_piece = puzzle_squares[i];
-                i = puzzle_squares.length; // reset so we can loop array again
+                i = puzzle_squares.length; // need to reset i otherwise loop further down wont work correctly
                 break;
             }
         }
 	   
-        // Move piece into available empty space
+        // Move piece into available empty space.
         // There are 4 potential spaces around the selected piece which it can move in (diagonal doesn't count - as we're not worrying about the 'drag and drop' yet)
         // So loop through each of them checking to see if any of their co-ordinates match the empty space
         // If they do match then move the selected piece into that space and set the selected piece to be the new empty space
@@ -223,16 +244,35 @@
                 y: selected_piece.y + piece_height
             }
         ];
-       
+        
         // Check if we can move the selected piece into the empty space (e.g. can only move selected piece up, down, left and right, not diagonally)
+//console.log("Empty space: ", empty_space.x, empty_space.y);
+//console.log("Selected: ", selected_piece.x, selected_piece.y);
         while (j--) {
+//console.log("Potential space " + j + ": ", potential_spaces[j].x, potential_spaces[j].y);
             if (potential_spaces[j].x === empty_space.x && potential_spaces[j].y === empty_space.y) {
-                // We then loop through the original puzzle order looking for the piece that was selected by the user
-                // But we don't check for the x value to match, we instead look for a match in where the puzzle piece was drawn on the canvas (then we'll know the x/y to slice the image off from the original image)
+//console.log("Found space to move puzzle into on iteration " + j + ": ", potential_spaces[j].x, potential_spaces[j].y);
+                // We then loop through the shuffled puzzle order looking for the piece that was selected by the user
+                // We check the drawnOnCanvasX/drawnOnCanvasY co-ordinates as these match 
                 while (i--) {
-                    if (puzzle_squares[i].drawnX === selected_piece.x && puzzle_squares[i].drawnY === selected_piece.y) {
+//console.log("puzzle_randomised[i].drawnOnCanvasX: ", puzzle_randomised[i].drawnOnCanvasX, "puzzle_randomised[i].drawnOnCanvasY: ", puzzle_randomised[i].drawnOnCanvasY);
+                    if (puzzle_randomised[i].drawnOnCanvasX === selected_piece.x && puzzle_randomised[i].drawnOnCanvasY === selected_piece.y) {
+//console.log("Found puzzle image to be drawn into empty space: ", puzzle_randomised[i].drawnOnCanvasX, puzzle_randomised[i].drawnOnCanvasY);
+//console.log("When we move the piece we actually are drawing (from the original image) slice: ", puzzle_randomised[i].x, puzzle_randomised[i].y);
+                        // Clear the space where the selected piece is currently
                         context.clearRect(selected_piece.x, selected_piece.y, piece_width, piece_height);
-                        context.drawImage(img, puzzle_squares[i].x, puzzle_squares[i].y, piece_width, piece_height, empty_space.x, empty_space.y, piece_width, piece_height);
+                        
+                        // Then redraw it into the empty space
+                        context.drawImage(img, puzzle_randomised[i].x, puzzle_randomised[i].y, piece_width, piece_height, empty_space.x, empty_space.y, piece_width, piece_height);
+                        
+                        // reset the empty space co-ordinates to be where the image we've just moved was.
+                        empty_space.x = puzzle_squares[i].drawnOnCanvasX;
+                        empty_space.y = puzzle_squares[i].drawnOnCanvasY;
+                        
+                        // Also update the drawnOnCanvasX/Y properties so they reflect the last place on the canvas they were drawn
+                        puzzle_squares[i].drawnOnCanvasX = selected_piece.x;
+                        puzzle_squares[i].drawnOnCanvasY = selected_piece.y;
+                        
                         break;
                     }
                 }
@@ -243,6 +283,9 @@
 	}
 	
 	// TODO:
+	// Figure out why puzzle piece only moves once
+	// Animate puzzle piece rather than move piece in single movement
+	// Swap out setInterval for requestAnimationFrame polyfill
     // Allow drag and drop (both mouse & touch events) of each individual piece (need logic for moving over other pieces)
 	// Set-up event handling (mouse and touch) to move elements when clicked on
     // Create handle icons (or think up unique way to allow) for whole rows/cols to be dragged at once
