@@ -99,7 +99,7 @@
         canvas.removeEventListener("touchstart", init, false);
         clearCanvas();
         
-        // Remove shadow (otherwise all puzzle pieces would get 
+        // Remove shadow (otherwise all puzzle pieces would get shadow applied to them)
         context.shadowOffsetX = 0;
 		context.shadowOffsetY = 0;
 	   
