@@ -196,8 +196,8 @@
             y: random_piece.y
         };
         
-//console.log("puzzle_squares: ", puzzle_squares);        
-//console.log("puzzle_randomised: ", puzzle_randomised);
+console.log("puzzle_squares: ", puzzle_squares);        
+console.log("puzzle_randomised: ", puzzle_randomised);
                 
         // Let the user interact with the interface
         canvas.addEventListener("mousedown", startGame, false);
@@ -246,33 +246,31 @@
         ];
         
         // Check if we can move the selected piece into the empty space (e.g. can only move selected piece up, down, left and right, not diagonally)
-//console.log("Empty space: ", empty_space.x, empty_space.y);
-//console.log("Selected: ", selected_piece.x, selected_piece.y);
+console.log("Empty space: ", empty_space.x, empty_space.y);
+console.log("Selected: ", selected_piece.x, selected_piece.y);
         while (j--) {
-//console.log("Potential space " + j + ": ", potential_spaces[j].x, potential_spaces[j].y);
             if (potential_spaces[j].x === empty_space.x && potential_spaces[j].y === empty_space.y) {
-//console.log("Found space to move puzzle into on iteration " + j + ": ", potential_spaces[j].x, potential_spaces[j].y);
+console.log("Found space to move puzzle into on iteration " + j + ": ", potential_spaces[j].x, potential_spaces[j].y);
                 // We then loop through the shuffled puzzle order looking for the piece that was selected by the user
                 // We check the drawnOnCanvasX/drawnOnCanvasY co-ordinates as these match 
                 while (i--) {
-//console.log("puzzle_randomised[i].drawnOnCanvasX: ", puzzle_randomised[i].drawnOnCanvasX, "puzzle_randomised[i].drawnOnCanvasY: ", puzzle_randomised[i].drawnOnCanvasY);
                     if (puzzle_randomised[i].drawnOnCanvasX === selected_piece.x && puzzle_randomised[i].drawnOnCanvasY === selected_piece.y) {
-//console.log("Found puzzle image to be drawn into empty space: ", puzzle_randomised[i].drawnOnCanvasX, puzzle_randomised[i].drawnOnCanvasY);
-//console.log("When we move the piece we actually are drawing (from the original image) slice: ", puzzle_randomised[i].x, puzzle_randomised[i].y);
+console.log("Found puzzle image to be drawn into empty space: ", puzzle_randomised[i].drawnOnCanvasX, puzzle_randomised[i].drawnOnCanvasY);
+console.log("When we move the piece we actually are drawing (from the original image) slice: ", puzzle_randomised[i].x, puzzle_randomised[i].y);
                         // Clear the space where the selected piece is currently
                         context.clearRect(selected_piece.x, selected_piece.y, piece_width, piece_height);
                         
                         // Then redraw it into the empty space
                         context.drawImage(img, puzzle_randomised[i].x, puzzle_randomised[i].y, piece_width, piece_height, empty_space.x, empty_space.y, piece_width, piece_height);
                         
-                        // reset the empty space co-ordinates to be where the image we've just moved was.
-                        empty_space.x = puzzle_squares[i].drawnOnCanvasX;
-                        empty_space.y = puzzle_squares[i].drawnOnCanvasY;
-                        
                         // Also update the drawnOnCanvasX/Y properties so they reflect the last place on the canvas they were drawn
-                        puzzle_squares[i].drawnOnCanvasX = selected_piece.x;
-                        puzzle_squares[i].drawnOnCanvasY = selected_piece.y;
+                        puzzle_randomised[i].drawnOnCanvasX = empty_space.x;
+                        puzzle_randomised[i].drawnOnCanvasY = empty_space.y;
                         
+                        // Reset the empty space co-ordinates to be where the image we've just moved was.
+                        empty_space.x = selected_piece.x;
+                        empty_space.y = selected_piece.y;
+                                                
                         break;
                     }
                 }
