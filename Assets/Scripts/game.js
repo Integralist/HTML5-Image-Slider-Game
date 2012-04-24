@@ -111,6 +111,7 @@
         
         // I didn't want to have to repeat the majority of the loop code twice.
         // So I wrapped the loop in a function and then branch off when necessary.
+        // The loop is called twice in this program. First time is to split the image into 'pieces', the second time is to display them on the Canvas in a random order.
         function loop (should_draw) {
             var should_draw = should_draw || false;
             
