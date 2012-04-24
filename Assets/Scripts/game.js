@@ -183,12 +183,13 @@
         // Randomly select a puzzle piece to remove (so user can move other pieces around)
         random_piece = puzzle_randomised[Math.round(Math.random()*puzzle_randomised.length-1)];
         
-        // About random calculation sometimes is returning undefined although I'm not sure why.
-        // I ran a loop of that code with a 1000 iterations and was unable to produce an undefined result.
-        // So as a temporary measure I've thrown in the following check to prevent an error.
+        // Sometimes the calculation to select a random puzzle piece will return undefined, although I've not figured out why yet.
+        // As a test, I ran a loop of that code with a 1000 iterations and was unable to produce an undefined result.
+        // So as a temporary measure I've thrown in the following conditional to prevent an error.
         if (!random_piece) {
         	random_piece = puzzle_randomised[1];
         }
+        // Remove randomly selected piece (so there is one empty space in the puzzle for a user to start moving another piece into)
         context.clearRect(random_piece.x, random_piece.y, piece_width, piece_height);
         
         // Keep track of empty space
