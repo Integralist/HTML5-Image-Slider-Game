@@ -92,7 +92,7 @@
 	// We first, remove event handler(s) and then we clear the canvas 
 	// Then we loop through all the puzzle pieces and build a map of co-ordinates
     // Then we shuffle the puzzle pieces
-    // Then we loop through the puzzle pieces again (but this time their in a random order) as we place each piece of the puzzle onto the canvas
+    // Then we loop through the puzzle pieces again (but this time they'll be in a random order) as we place each piece of the puzzle onto the canvas
     // Note: I find 'while' loops cleaner to read than for loops
 	function init(){
         canvas.removeEventListener("mousedown", init, false);
