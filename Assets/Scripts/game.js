@@ -213,7 +213,13 @@
             potential_spaces,
             // Firefox only recognised properties pageX/Y
             eventX = e.offsetX || e.pageX, 
-            eventY = e.offsetY || e.pageY;
+            eventY = e.offsetY || e.pageY,
+            pieceMovedX,
+            pieceMovedY,
+            moveAmount = 10,
+            interval,
+            coord,
+            direction;
 	   
         // Find the piece that was clicked on
         while (i--) {
@@ -259,6 +265,64 @@
                     if (puzzle_randomised[i].drawnOnCanvasX === selected_piece.x && puzzle_randomised[i].drawnOnCanvasY === selected_piece.y) {
 //console.log("Found puzzle image to be drawn into empty space: ", puzzle_randomised[i].drawnOnCanvasX, puzzle_randomised[i].drawnOnCanvasY);
 //console.log("When we move the piece we actually are drawing (from the original image) slice: ", puzzle_randomised[i].x, puzzle_randomised[i].y);
+                        
+                        // We'll keep track of how far the piece has moved
+                        pieceMovedX = selected_piece.x;
+                        pieceMovedY = selected_piece.y;
+                        
+                        interval = window.setInterval(function animate(){
+                        	
+                        	// Clear the space where the selected piece is currently
+            	            context.clearRect(pieceMovedX, pieceMovedY, piece_width, piece_height);
+        	                
+    	                    // We don't want to move the x/y co-ordinates if they're already the same
+	                        if (pieceMovedX !== empty_space.x) {
+	                        	coord = "x";
+	                        	// Check which direction the piece needs to move in
+	                        	if (pieceMovedX > empty_space.x) {
+	                        		direction = 0;
+	                        		pieceMovedX -= moveAmount;
+	                        	} else {
+	                        		direction = 1;
+	                        		pieceMovedX += moveAmount;
+	                        	}
+	                        	
+	                        } else if (pieceMovedY !== empty_space.y) {
+	                        	coord = "y";
+	                        	// Check which direction the piece needs to move in
+	                        	if (pieceMovedY > empty_space.y) {
+	                        		direction = 0;
+	                        		pieceMovedY -= moveAmount;
+	                        	} else {
+	                        		direction = 1;
+	                        		pieceMovedY += moveAmount;
+	                        	}
+	                        }
+	                        
+	                        // Then redraw it into the empty space
+	                        context.drawImage(img, puzzle_randomised[i].x, puzzle_randomised[i].y, piece_width, piece_height, pieceMovedX, pieceMovedY, piece_width, piece_height);
+	                        
+	                        // Determine when to clear interval
+	                        if (direction && coord === "x" && pieceMovedX >= empty_space.x || 
+	                        	direction && coord === "y" && pieceMovedY >= empty_space.y || 
+	                        	!direction && coord === "x" && pieceMovedX <= empty_space.x || 
+	                        	!direction && coord === "y" && pieceMovedY <= empty_space.y) {
+	                        	
+	                        	window.clearInterval(interval);
+	                        	
+	                        	// Also update the drawnOnCanvasX/Y properties so they reflect the last place on the canvas they were drawn
+		                        puzzle_randomised[i].drawnOnCanvasX = empty_space.x;
+		                        puzzle_randomised[i].drawnOnCanvasY = empty_space.y;
+		                        
+		                        // Reset the empty space co-ordinates to be where the image we've just moved was.
+		                        empty_space.x = selected_piece.x;
+		                        empty_space.y = selected_piece.y;
+	                        	
+	                        }
+                        	
+                        }, 6);
+                        
+                        /*
                         // Clear the space where the selected piece is currently
                         context.clearRect(selected_piece.x, selected_piece.y, piece_width, piece_height);
                         
@@ -272,6 +336,7 @@
                         // Reset the empty space co-ordinates to be where the image we've just moved was.
                         empty_space.x = selected_piece.x;
                         empty_space.y = selected_piece.y;
+                        */
                                                 
                         break;
                     }
@@ -282,8 +347,12 @@
         }
 	}
 	
-	// TODO:
-	// Animate puzzle piece rather than move piece in single movement
+	// TODO (Urgent):
+	// Bug: with the first image piece moved, if you click same piece again then a different image piece is drawn back?
+	// Need to look at how better to clearRect of previous image position as there are thin lines visible where it hasn't been cleared correctly.
+	// Need to make sure that the final position isn't over (as the y co-ordinates are a float rather than an integer).
+	
+	// TODO (feature):
 	// Swap out setInterval for requestAnimationFrame polyfill
     // Allow drag and drop (both mouse & touch events) of each individual piece (need to think about the logic for moving over other pieces)
     // Create handle icons (or think up unique way to allow) for whole rows/cols to be dragged at once
