@@ -1,12 +1,9 @@
 HTML5-Image-Slider-Game
 =======================
 
-Split image into sections and in random order and let user move pieces back together again
+Split image into puzzle pieces (and display in random order) and let user move pieces back together again.
 
-##TODO (Urgent):
-* Bug: with the first image piece moved, if you click same piece again then a different image piece is drawn back?
-	* Update on bug: seems to be random?! Sometimes it never happens, other times it happens on the 2nd piece moved, other times it's the 3rd piece
-* Need to look at vertical positioning of puzzle piece (currently appears to move too high/low)
+Works on mobile and desktop devices devices (using mouse and touch events).
 	
 ##TODO (feature):
 * Swap out setInterval for requestAnimationFrame polyfill
