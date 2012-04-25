@@ -53,12 +53,18 @@
 	img.src = "Assets/Images/photo.jpg";	
 	img.onload = function(){
         // Once image is loaded we can start calculating dimensions of puzzle
-        canvas_height = img.height;
-        canvas_width = img.width;
+        piece_height = ~~(this.height / canvas_grid); // I prefer to use bitwise operator rather than Math.floor (see: http://james.padolsey.com/javascript/double-bitwise-not/)
+		piece_width = this.width / canvas_grid;
+		canvas_height = piece_height * canvas_grid;
+        canvas_width = piece_width * canvas_grid;
         canvas.height = canvas_height;
     	canvas.width = canvas_width;
-        piece_height = canvas_height / canvas_grid;
-		piece_width = canvas_width / canvas_grid;
+    	
+    	// Note: for the image I used the height of each puzzle piece was a float and not an integer.
+		// This caused complications with moving puzzle pieces that aren't a round number.
+		// So I rounded the height of each puzzle piece to make the movement easier.
+		// This meant I had to re-set the height of the 'original' image (which is displayed as a reference to how the image should look)
+		document.getElementsByTagName("img")[0].height = canvas_height;
 		
 		// Now we can load the image onto the canvas
         loadImageOntoCanvas();
@@ -346,15 +352,5 @@
             }
         }
 	}
-	
-	// TODO (Urgent):
-	// Bug: with the first image piece moved, if you click same piece again then a different image piece is drawn back?
-	// Need to look at how better to clearRect of previous image position as there are thin lines visible where it hasn't been cleared correctly.
-	// Need to make sure that the final position isn't over (as the y co-ordinates are a float rather than an integer).
-	
-	// TODO (feature):
-	// Swap out setInterval for requestAnimationFrame polyfill
-    // Allow drag and drop (both mouse & touch events) of each individual piece (need to think about the logic for moving over other pieces)
-    // Create handle icons (or think up unique way to allow) for whole rows/cols to be dragged at once
 	
 }(this))

@@ -5,8 +5,8 @@ Split image into sections and in random order and let user move pieces back toge
 
 ##TODO (Urgent):
 * Bug: with the first image piece moved, if you click same piece again then a different image piece is drawn back?
-* Need to look at how better to clearRect of previous image position as there are thin lines visible where it hasn't been cleared correctly.
-* Need to make sure that the final position isn't over (as the y co-ordinates are a float rather than an integer).
+	* Update on bug: seems to be random?! Sometimes it never happens, other times it happens on the 2nd piece moved, other times it's the 3rd piece
+* Need to look at vertical positioning of puzzle piece (currently appears to move too high/low)
 	
 ##TODO (feature):
 * Swap out setInterval for requestAnimationFrame polyfill
