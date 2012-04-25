@@ -277,11 +277,11 @@
                         pieceMovedY = selected_piece.y;
                         
                         interval = window.setInterval(function animate(){
+                        
+                            // Clear the space where the selected piece is currently
+                            context.clearRect(pieceMovedX, pieceMovedY, piece_width, piece_height);
                         	
-                        	// Clear the space where the selected piece is currently
-            	            context.clearRect(pieceMovedX, pieceMovedY, piece_width, piece_height);
-        	                
-    	                    // We don't want to move the x/y co-ordinates if they're already the same
+                        	// We don't want to move the x/y co-ordinates if they're already the same
 	                        if (pieceMovedX !== empty_space.x) {
 	                        	coord = "x";
 	                        	// Check which direction the piece needs to move in
@@ -305,16 +305,16 @@
 	                        	}
 	                        }
 	                        
-	                        // Then redraw it into the empty space
-	                        context.drawImage(img, puzzle_randomised[i].x, puzzle_randomised[i].y, piece_width, piece_height, pieceMovedX, pieceMovedY, piece_width, piece_height);
-	                        
-	                        // Determine when to clear interval
 	                        if (direction && coord === "x" && pieceMovedX >= empty_space.x || 
 	                        	direction && coord === "y" && pieceMovedY >= empty_space.y || 
 	                        	!direction && coord === "x" && pieceMovedX <= empty_space.x || 
 	                        	!direction && coord === "y" && pieceMovedY <= empty_space.y) {
 	                        	
 	                        	window.clearInterval(interval);
+	                        	
+	                        	// Draw one last time directly into the empty space
+	                        	// Note: I was finding that because of the loop interation sometimes the y position would be -2 or 2+ but I decided that near enough the position drawing directly into the empty space the user wont even notice
+                                context.drawImage(img, puzzle_randomised[i].x, puzzle_randomised[i].y, piece_width, piece_height, empty_space.x, empty_space.y, piece_width, piece_height);
 	                        	
 	                        	// Also update the drawnOnCanvasX/Y properties so they reflect the last place on the canvas they were drawn
 		                        puzzle_randomised[i].drawnOnCanvasX = empty_space.x;
@@ -324,7 +324,10 @@
 		                        empty_space.x = selected_piece.x;
 		                        empty_space.y = selected_piece.y;
 	                        	
-	                        }
+                            } else {
+                                // Then redraw it into the empty space
+                                context.drawImage(img, puzzle_randomised[i].x, puzzle_randomised[i].y, piece_width, piece_height, pieceMovedX, pieceMovedY, piece_width, piece_height);
+                            }
                         	
                         }, 6);
                         
