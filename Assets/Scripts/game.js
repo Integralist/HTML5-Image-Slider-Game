@@ -113,7 +113,9 @@
             y_coord = 0,
             counter = 0,
             loop_length = canvas_grid * canvas_grid,
-            random_piece;
+            random_piece,
+            random_number,
+            removed_piece;
         
         // I didn't want to have to repeat the majority of the loop code twice.
         // So I wrapped the loop in a function and then branch off when necessary.
@@ -187,14 +189,24 @@
         loop(true);
         
         // Randomly select a puzzle piece to remove (so user can move other pieces around)
-        random_piece = puzzle_randomised[Math.round(Math.random()*puzzle_randomised.length-1)];
+        random_number = Math.round(Math.random()*puzzle_randomised.length-1)
+        random_piece = puzzle_randomised[random_number];
         
         // Sometimes the calculation to select a random puzzle piece will return undefined, although I've not figured out why yet.
         // As a test, I ran a loop of that code with a 1000 iterations and was unable to produce an undefined result.
-        // So as a temporary measure I've thrown in the following conditional to prevent an error.
+        // So as a temporary measure I've thrown in the following try/catch (and conditional) to prevent any errors until I figure out what's happening.
+        try {
+            // Remove the random piece from the Array also
+            removed_piece = puzzle_randomised.splice(random_number, 1);
+        } catch(e) {
+            alert("e:" + e);
+        }
+        /*
         if (!random_piece) {
         	random_piece = puzzle_randomised[1];
         }
+        */
+        
         // Remove randomly selected piece (so there is one empty space in the puzzle for a user to start moving another piece into)
         context.clearRect(random_piece.drawnOnCanvasX, random_piece.drawnOnCanvasY, piece_width, piece_height);
         
@@ -230,7 +242,6 @@
             storeSelectedY;
 	   
         // Find the piece that was clicked on
-        console.info("eventX: ", eventX, ", eventY: ", eventY);
         while (i--) {
             if (eventX >= puzzle_randomised[i].drawnOnCanvasX && eventX <= (puzzle_randomised[i].drawnOnCanvasX + piece_width) && eventY >= puzzle_randomised[i].drawnOnCanvasY && eventY <= (puzzle_randomised[i].drawnOnCanvasY + piece_height)) {
                 selected_piece = puzzle_randomised[i];
@@ -263,18 +274,27 @@
         ];
         
         // Check if we can move the selected piece into the empty space (e.g. can only move selected piece up, down, left and right, not diagonally)
-console.log("Empty space: ", empty_space.x, empty_space.y);
-console.log("Selected: ", selected_piece.drawnOnCanvasX, selected_piece.drawnOnCanvasY);
+//console.log("Empty space: ", empty_space.x, empty_space.y);
+//console.log("Selected: ", selected_piece.drawnOnCanvasX, selected_piece.drawnOnCanvasY);
         while (j--) {
             if (potential_spaces[j].x === empty_space.x && potential_spaces[j].y === empty_space.y) {
 //console.log("Found space to move puzzle into on iteration " + j + ": ", potential_spaces[j].x, potential_spaces[j].y);
                 // We then loop through the shuffled puzzle order looking for the piece that was selected by the user
-                // We check the drawnOnCanvasX/drawnOnCanvasY co-ordinates as these match 
                 while (i--) {
+/*
+console.group("While Loop");
+    console.log("puzzle_randomised["+i+"].drawnOnCanvasX: ", puzzle_randomised[i].drawnOnCanvasX);
+    console.log("puzzle_randomised["+i+"].drawnOnCanvasY: ", puzzle_randomised[i].drawnOnCanvasY);
+    console.log("puzzle_randomised["+i+"].x: ", puzzle_randomised[i].y);
+    console.log("puzzle_randomised["+i+"].y: ", puzzle_randomised[i].y);
+    console.log("selected_piece.drawnOnCanvasX: ", selected_piece.drawnOnCanvasX);
+    console.log("selected_piece.drawnOnCanvasY: ", selected_piece.drawnOnCanvasY);
+console.groupEnd();
+*/
                     if (puzzle_randomised[i].drawnOnCanvasX === selected_piece.drawnOnCanvasX && 
                         puzzle_randomised[i].drawnOnCanvasY === selected_piece.drawnOnCanvasY) {
 //console.log("Found puzzle image to be drawn into empty space: ", puzzle_randomised[i].drawnOnCanvasX, puzzle_randomised[i].drawnOnCanvasY);
-console.log("When we move the piece we actually are drawing (from the original image) slice: ", puzzle_randomised[i].x, puzzle_randomised[i].y);
+//console.log("When we move the piece we actually are drawing (from the original image) slice: ", puzzle_randomised[i].x, puzzle_randomised[i].y);
                         
                         // We'll keep track of how far the piece has moved
                         pieceMovedX = selected_piece.drawnOnCanvasX;
@@ -285,8 +305,6 @@ console.log("When we move the piece we actually are drawing (from the original i
                         storeSelectedY = selected_piece.drawnOnCanvasY;
                         
                         interval = window.setInterval(function animate (piece_to_move) {
-                        
-                            console.log("the piece to move: ", piece_to_move);
                         
                             // Clear the space where the selected piece is currently
                             context.clearRect(pieceMovedX, pieceMovedY, piece_width, piece_height);
@@ -330,12 +348,7 @@ console.log("When we move the piece we actually are drawing (from the original i
 		                        piece_to_move.drawnOnCanvasX = empty_space.x;
 		                        piece_to_move.drawnOnCanvasY = empty_space.y;
 		                        
-		                        console.group();
-                                    console.log("storeSelectedX: ", storeSelectedX);
-                                    console.log("storeSelectedY: ", storeSelectedY);
-                                console.groupEnd();
-                                
-	                        	// Reset the empty space co-ordinates to be where the image we've just moved was.
+		                        // Reset the empty space co-ordinates to be where the image we've just moved was.
 		                        empty_space.x = storeSelectedX;
 		                        empty_space.y = storeSelectedY;
 	                        	
