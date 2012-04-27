@@ -192,20 +192,8 @@
         random_number = Math.round(Math.random()*puzzle_randomised.length-1)
         random_piece = puzzle_randomised[random_number];
         
-        // Sometimes the calculation to select a random puzzle piece will return undefined, although I've not figured out why yet.
-        // As a test, I ran a loop of that code with a 1000 iterations and was unable to produce an undefined result.
-        // So as a temporary measure I've thrown in the following try/catch (and conditional) to prevent any errors until I figure out what's happening.
-        try {
-            // Remove the random piece from the Array also
-            removed_piece = puzzle_randomised.splice(random_number, 1);
-        } catch(e) {
-            alert("e:" + e);
-        }
-        /*
-        if (!random_piece) {
-        	random_piece = puzzle_randomised[1];
-        }
-        */
+        // Remove the random piece from the Array also
+        removed_piece = puzzle_randomised.splice(random_number, 1);
         
         // Remove randomly selected piece (so there is one empty space in the puzzle for a user to start moving another piece into)
         context.clearRect(random_piece.drawnOnCanvasX, random_piece.drawnOnCanvasY, piece_width, piece_height);
@@ -240,11 +228,17 @@
             direction, 
             storeSelectedX, 
             storeSelectedY;
-	   
+        
         // Find the piece that was clicked on
         while (i--) {
+            // Make sure we haven't selected the current empty space
+            if (eventX >= empty_space.x && eventX <= (empty_space.x + piece_width) && eventY >= empty_space.y && eventY <= (empty_space.y + piece_height)) {
+                return;
+            }
+            
             if (eventX >= puzzle_randomised[i].drawnOnCanvasX && eventX <= (puzzle_randomised[i].drawnOnCanvasX + piece_width) && eventY >= puzzle_randomised[i].drawnOnCanvasY && eventY <= (puzzle_randomised[i].drawnOnCanvasY + piece_height)) {
                 selected_piece = puzzle_randomised[i];
+                
                 i = puzzle_randomised.length; // need to reset i otherwise loop further down wont work correctly
                 break;
             }

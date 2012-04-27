@@ -6,10 +6,8 @@ Split image into puzzle pieces (and display in random order) and let user move p
 Works on mobile and desktop devices devices (using mouse and touch events).
 
 ##TODO (Bugs):
-* Figure out issue with 'random' number generated within Array length range resulting in undefined (might already be fixed).
 * Clicking too quickly onto moving piece causes an error (so disable click/touch while animating and re-instate afterwards)
-* Clicking on empty space causes an error
-* Look at try/catch statement and remove
+    * I can't seem to replicate this often at all (it seemed to happen once in a blue moon)?
 	
 ##TODO (feature):
 * Swap out setInterval for requestAnimationFrame polyfill
