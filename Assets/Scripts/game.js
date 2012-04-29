@@ -15,7 +15,8 @@
 		text_dimensions = context.measureText(opening_message),
 		puzzle_squares = [],
 		puzzle_randomised,
-		empty_space;
+		empty_space,
+		drag = true;
 	
 	img.src = "Assets/Images/photo.jpg";	
 	img.onload = function(){
@@ -58,7 +59,7 @@
         context.fillText(opening_message, (canvas_width / 2) - text_dimensions.width, (canvas_height / 2));
         
         // Initialise the game
-        canvas.addEventListener("mousedown", init, false); // some touch devices delay 'click' event up to 300ms
+        canvas.addEventListener("click", init, false); // some touch devices delay 'click' event up to 300ms
         canvas.addEventListener("touchstart", init, false);
 	};
 	
@@ -68,7 +69,7 @@
     // Then we loop through the puzzle pieces again (but this time they'll be in a random order) as we place each piece of the puzzle onto the canvas
     // Note: I find 'while' loops cleaner to read than for loops
 	function init(){
-        canvas.removeEventListener("mousedown", init, false);
+        canvas.removeEventListener("click", init, false);
         canvas.removeEventListener("touchstart", init, false);
         clearCanvas();
         
@@ -181,11 +182,52 @@
 //console.log("puzzle_randomised: ", puzzle_randomised);
                 
         // Let the user interact with the interface
-        canvas.addEventListener("mousedown", startGame, false);
-        canvas.addEventListener("touchstart", startGame, false);
+        canvas.addEventListener("click", movePiece, false);
+        canvas.addEventListener("mousedown", checkDrag, false);
+        canvas.addEventListener("touchstart", checkDrag, false);
+        canvas.addEventListener("mouseup", stopDrag, false);
 	}
 	
-	function startGame (e) {
+	function startDrag (e) {
+        console.log("Start Drag: ", e);
+	}
+	
+	function stopDrag (e) {
+        drag = false; // this is used to tell if the user is dragging or doing a single click
+        
+        // TEMP TIMEOUT TO SIMILATE OTHER CODE BEING RUN
+        window.setTimeout(function(){
+            // Now this function is finished we'll reset the drag variable back to true
+            drag = true;
+            
+            // Re-apply the event listeners
+            canvas.addEventListener("click", movePiece, false);
+            canvas.addEventListener("mousedown", checkDrag, false);
+            canvas.addEventListener("touchstart", checkDrag, false);
+        }, 1000);
+	}
+	
+	function checkDrag (e) {
+        // Check if we need to be "drag & dropping" (or just animating puzzle piece clicked on)
+        if (e.type === "mousedown") {
+            // Prevent function from executing more than once at a time
+            canvas.removeEventListener("mousedown", checkDrag, false);
+            canvas.removeEventListener("touchstart", checkDrag, false);
+            
+            // Check if we are going to be dragging a puzzle piece or not
+            // If the user still hasn't "released" their mouse-click/touch after 150ms then we'll start dragging
+            window.setTimeout(function(){
+                if (drag) {
+                    // We know we're dragging so remove 'click' event
+                    canvas.removeEventListener("click", movePiece, false);
+                    startDrag(e);
+                    return; // prevent the below code (which animates a puzzle piece when clicked on)
+                }
+            }, 150);
+        }
+    }
+    
+    function movePiece (e) {
         var i = puzzle_randomised.length,
             j = 4,
             selected_piece,
@@ -216,8 +258,6 @@
                 break;
             }
         }
-        
-        alert(selected_piece);
 	   
         // Move piece into available empty space.
         // There are 4 potential spaces around the selected piece which it can move in (diagonal doesn't count - as we're not worrying about the 'drag and drop' yet)
@@ -320,6 +360,10 @@ console.groupEnd();
 		                        // Reset the empty space co-ordinates to be where the image we've just moved was.
 		                        empty_space.x = storeSelectedX;
 		                        empty_space.y = storeSelectedY;
+		                        
+		                        // Re-apply the event listeners
+                                canvas.addEventListener("mousedown", checkDrag, false);
+                                canvas.addEventListener("touchstart", checkDrag, false);
 	                        	
                             } else {
                                 // Then redraw it into the empty space
