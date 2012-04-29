@@ -1,36 +1,3 @@
-// Modified @paul_irish's requestAnimationFrame pollyfill (see: https://gist.github.com/1579671)
-// requestAnimationFrame is more efficient for canvas animations than standard setInterval
-(function() {
-    var lastTime = 0,
-        vendors = ['ms', 'moz', 'webkit', 'o'],
-        len = vendors.length;
-    
-    for (var x = 0; x < len && !window.requestAnimationFrame; ++x) {
-        window.requestAnimationFrame = window[vendors[x] + 'RequestAnimationFrame'];
-        window.cancelAnimationFrame = window[vendors[x] + 'CancelAnimationFrame'] || window[vendors[x] + 'CancelRequestAnimationFrame'];
-    }
- 
-    if (!window.requestAnimationFrame) {
-        window.requestAnimationFrame = function (callback, element) {
-            var currTime = new Date().getTime(),
-                timeToCall = Math.max(0, 16 - (currTime - lastTime)),
-                id = window.setTimeout(function(){
-                    callback(currTime + timeToCall); 
-                }, timeToCall);
-                
-            lastTime = currTime + timeToCall;
-            
-            return id;
-        };
-    }
- 
-    if (!window.cancelAnimationFrame) {
-        window.cancelAnimationFrame = function (id) {
-            clearTimeout(id);
-        };
-    }
-}());
-
 (function (global) {
 	
 	// Set-up variables that will be used throughout this script.
