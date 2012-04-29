@@ -1,36 +1,3 @@
-// Modified @paul_irish's requestAnimationFrame pollyfill (see: https://gist.github.com/1579671)
-// requestAnimationFrame is more efficient for canvas animations than standard setInterval
-(function() {
-    var lastTime = 0,
-        vendors = ['ms', 'moz', 'webkit', 'o'],
-        len = vendors.length;
-    
-    for (var x = 0; x < len && !window.requestAnimationFrame; ++x) {
-        window.requestAnimationFrame = window[vendors[x] + 'RequestAnimationFrame'];
-        window.cancelAnimationFrame = window[vendors[x] + 'CancelAnimationFrame'] || window[vendors[x] + 'CancelRequestAnimationFrame'];
-    }
- 
-    if (!window.requestAnimationFrame) {
-        window.requestAnimationFrame = function (callback, element) {
-            var currTime = new Date().getTime(),
-                timeToCall = Math.max(0, 16 - (currTime - lastTime)),
-                id = window.setTimeout(function(){
-                    callback(currTime + timeToCall); 
-                }, timeToCall);
-                
-            lastTime = currTime + timeToCall;
-            
-            return id;
-        };
-    }
- 
-    if (!window.cancelAnimationFrame) {
-        window.cancelAnimationFrame = function (id) {
-            clearTimeout(id);
-        };
-    }
-}());
-
 (function (global) {
 	
 	// Set-up variables that will be used throughout this script.
@@ -189,7 +156,13 @@
         loop(true);
         
         // Randomly select a puzzle piece to remove (so user can move other pieces around)
-        random_number = Math.round(Math.random()*puzzle_randomised.length-1)
+        random_number = Math.round(Math.random()*puzzle_randomised.length-1);
+        
+        // The result sometimes can equal -1
+        if (random_number < 0) {
+            random_number = 0;
+        }
+        
         random_piece = puzzle_randomised[random_number];
         
         // Remove the random piece from the Array also
@@ -243,6 +216,8 @@
                 break;
             }
         }
+        
+        alert(selected_piece);
 	   
         // Move piece into available empty space.
         // There are 4 potential spaces around the selected piece which it can move in (diagonal doesn't count - as we're not worrying about the 'drag and drop' yet)
