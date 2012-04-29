@@ -5,6 +5,8 @@
 	var doc = global.document,
 	    canvas = doc.getElementById("game"),
 		context = canvas.getContext("2d"),
+		dragCanvas = doc.createElement("canvas"),
+		dragCanvasContext = dragCanvas.getContext("2d"),
 		img = new Image(),
 		canvas_height,
 		canvas_width,
@@ -16,7 +18,8 @@
 		puzzle_squares = [],
 		puzzle_randomised,
 		empty_space,
-		drag = true;
+		drag = true,
+		eventObject;
 	
 	img.src = "Assets/Images/photo.jpg";	
 	img.onload = function(){
@@ -25,8 +28,13 @@
 		piece_width = this.width / canvas_grid;
 		canvas_height = piece_height * canvas_grid;
         canvas_width = piece_width * canvas_grid;
-        canvas.height = canvas_height;
-    	canvas.width = canvas_width;
+        canvas.height = dragCanvas.height = canvas_height;
+    	canvas.width = dragCanvas.width = canvas_width;
+    	
+    	// The dragCanvas will appear on top of the normal canvas (when we're dragging a puzzle piece)
+    	dragCanvas.className = "drag-canvas";
+    	dragCanvasContext.globalAlpha = .9;
+    	doc.body.appendChild(dragCanvas);
     	
     	// Note: for the image I used the height of each puzzle piece was a float and not an integer.
 		// This caused complications with moving puzzle pieces that aren't a round number.
@@ -183,20 +191,76 @@
                 
         // Let the user interact with the interface
         canvas.addEventListener("click", movePiece, false);
+        
         canvas.addEventListener("mousedown", checkDrag, false);
         canvas.addEventListener("touchstart", checkDrag, false);
+        
         canvas.addEventListener("mouseup", stopDrag, false);
+        canvas.addEventListener("touchend", stopDrag, false);
 	}
 	
 	function startDrag (e) {
-        console.log("Start Drag: ", e);
+        var selected_piece,
+            i = puzzle_randomised.length,
+            // Firefox only recognised properties pageX/Y
+            eventX = e.offsetX || e.pageX, 
+            eventY = e.offsetY || e.pageY;
+        
+        // The user could be using a 'mouse' or 'touch' device so I named these global properties very generically
+        // The reason they're global is so that we can reset them from outside this function
+		global.user_positionX = eventX - (piece_width / 2),
+        global.user_positionY = eventY - (piece_height / 2);
+        
+        eventObject = {
+            handleEvent: function (e) {
+                dragPiece(e, selected_piece);
+            }
+        };
+        
+        // Find the piece that was clicked on
+        selected_piece = findSelectedPuzzlePiece(i, eventX, eventY);
+        
+        // Remove the piece from the canvas now we know which piece it is
+        context.clearRect(selected_piece.drawnOnCanvasX, selected_piece.drawnOnCanvasY, piece_width, piece_height);
+        
+        // Now display the 'drag' canvas (e.g. the canvas used for just "drag and drop" of the selected puzzle piece)
+        dragCanvas.className = "drag-canvas is-active";
+        
+        // Now draw the selected piece onto the drag canvas
+        dragCanvasContext.drawImage(img, selected_piece.x, selected_piece.y, piece_width, piece_height, global.user_positionX, global.user_positionY, piece_width, piece_height);
+        
+        // I use an event object rather than specifying a listener because I want to be able to pass through extra arguments to the listener.
+        // I could have used an anonymous function to wrap call to 'dragPiece' and pass through arguments that way, but then you can't remove a listener when it's set-up via an anonymous function
+        dragCanvas.addEventListener("mousemove", eventObject, false);
+        dragCanvas.addEventListener("touchmove", eventObject, false);
+	}
+	
+	function dragPiece (e, selected_piece) {
+        // Firefox only recognised properties pageX/Y
+        var eventX = e.offsetX || e.pageX, 
+            eventY = e.offsetY || e.pageY;
+        
+        // Remove the piece from the canvas before we start drawing it again
+        dragCanvasContext.clearRect(global.user_positionX, global.user_positionY, piece_width, piece_height);
+        
+        // Update global mouse position
+        global.user_positionX = eventX - (piece_width / 2),
+        global.user_positionY = eventY - (piece_height / 2);
+        
+        // Re-draw puzzle piece in new position
+        dragCanvasContext.drawImage(img, selected_piece.x, selected_piece.y, piece_width, piece_height, global.user_positionX, global.user_positionY, piece_width, piece_height);
 	}
 	
 	function stopDrag (e) {
         drag = false; // this is used to tell if the user is dragging or doing a single click
         
+        canvas.removeEventListener("mousemove", eventObject, false);
+        canvas.removeEventListener("touchmove", eventObject, false);
+        
+        console.log("mouse up event triggered!");
+        
         // TEMP TIMEOUT TO SIMILATE OTHER CODE BEING RUN
-        window.setTimeout(function(){
+        global.setTimeout(function(){
             // Now this function is finished we'll reset the drag variable back to true
             drag = true;
             
@@ -216,14 +280,25 @@
             
             // Check if we are going to be dragging a puzzle piece or not
             // If the user still hasn't "released" their mouse-click/touch after 150ms then we'll start dragging
-            window.setTimeout(function(){
+            global.setTimeout(function(){
                 if (drag) {
-                    // We know we're dragging so remove 'click' event
                     canvas.removeEventListener("click", movePiece, false);
                     startDrag(e);
-                    return; // prevent the below code (which animates a puzzle piece when clicked on)
                 }
             }, 150);
+        }
+    }
+    
+    function findSelectedPuzzlePiece (i, eventX, eventY) {
+        while (i--) {
+            // Make sure we haven't selected the current empty space
+            if (eventX >= empty_space.x && eventX <= (empty_space.x + piece_width) && eventY >= empty_space.y && eventY <= (empty_space.y + piece_height)) {
+                return false;
+            }
+            
+            if (eventX >= puzzle_randomised[i].drawnOnCanvasX && eventX <= (puzzle_randomised[i].drawnOnCanvasX + piece_width) && eventY >= puzzle_randomised[i].drawnOnCanvasY && eventY <= (puzzle_randomised[i].drawnOnCanvasY + piece_height)) {
+                return puzzle_randomised[i];
+            }
         }
     }
     
@@ -245,18 +320,11 @@
             storeSelectedY;
         
         // Find the piece that was clicked on
-        while (i--) {
-            // Make sure we haven't selected the current empty space
-            if (eventX >= empty_space.x && eventX <= (empty_space.x + piece_width) && eventY >= empty_space.y && eventY <= (empty_space.y + piece_height)) {
-                return;
-            }
-            
-            if (eventX >= puzzle_randomised[i].drawnOnCanvasX && eventX <= (puzzle_randomised[i].drawnOnCanvasX + piece_width) && eventY >= puzzle_randomised[i].drawnOnCanvasY && eventY <= (puzzle_randomised[i].drawnOnCanvasY + piece_height)) {
-                selected_piece = puzzle_randomised[i];
-                
-                i = puzzle_randomised.length; // need to reset i otherwise loop further down wont work correctly
-                break;
-            }
+        selected_piece = findSelectedPuzzlePiece(i, eventX, eventY);
+        
+        // If no piece found then just bail out of this function
+        if (!selected_piece) {
+            return;
         }
 	   
         // Move piece into available empty space.
@@ -313,7 +381,7 @@ console.groupEnd();
                         storeSelectedX = selected_piece.drawnOnCanvasX;
                         storeSelectedY = selected_piece.drawnOnCanvasY;
                         
-                        interval = window.setInterval(function animate (piece_to_move) {
+                        interval = global.setInterval(function animate (piece_to_move) {
                         
                             // Clear the space where the selected piece is currently
                             context.clearRect(pieceMovedX, pieceMovedY, piece_width, piece_height);
@@ -347,7 +415,7 @@ console.groupEnd();
 	                        	!direction && coord === "x" && pieceMovedX <= empty_space.x || 
 	                        	!direction && coord === "y" && pieceMovedY <= empty_space.y) {
 	                        	
-	                        	window.clearInterval(interval);
+	                        	global.clearInterval(interval);
 	                        	
 	                        	// Draw one last time directly into the empty space
 	                        	// Note: I was finding that because of the loop interation sometimes the y position would be -2 or 2+ but I decided that near enough the position drawing directly into the empty space the user wont even notice
