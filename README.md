@@ -1,12 +1,13 @@
-HTML5-Image-Slider-Game
-=======================
+#HTML5-Image-Slider-Game
 
 Split image into puzzle pieces (and display in random order) and let user move pieces back together again.
 
 Works on mobile and desktop devices devices (using mouse and touch events).
 
-##TODO (Bug):
-* drop co-ordinates are off
+**Checkout the drag and drop branch - still being worked on**
+
+##TODO (Bugs - "drag & drop" branch):
+* drag and drop co-ordinates are off slightly (so feel too jumpy)
 * Mobile devices aren't handling the drag and drop (once the drag canvas is positioned above the original canvas the touch interaction switches to the containing window and not the drag canvas?)
 
 ##TODO:
