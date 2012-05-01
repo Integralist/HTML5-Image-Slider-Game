@@ -19,9 +19,27 @@
 		puzzle_randomised,
 		empty_space,
 		drag = true,
-		justDragged = false,
-		nativeMouseUpTriggered = false,
-		eventObject;
+		upEventTriggered = false,
+		eventObject,
+		eventsMap  = {
+            select: "click",
+            down: "mousedown",
+            up: "mouseup",
+            move: "mousemove"
+        },
+        touchSupported = false;
+	
+	// We have a set API for handling events that typically map to mouse events
+	// But if the device supports touch events then we'll use those instead
+	if ("ontouchstart" in global) {
+        touchSupported = true;
+        eventsMap  = {
+            select: "touchstart",
+            down: "touchstart",
+            up: "touchend",
+            move: "touchmove"
+        }
+    }
 	
 	img.src = "Assets/Images/photo.jpg";	
 	img.onload = function(){
@@ -63,8 +81,7 @@
         context.fillText(opening_message, (canvas_width / 2) - text_dimensions.width, (canvas_height / 2));
         
         // Initialise the game
-        canvas.addEventListener("click", init, false); // some touch devices delay 'click' event up to 300ms
-        canvas.addEventListener("touchstart", init, false);
+        canvas.addEventListener(eventsMap.select, init, false);
 	};
 	
 	// We first, remove event handler(s) and then we clear the canvas 
@@ -73,8 +90,7 @@
     // Then we loop through the puzzle pieces again (but this time they'll be in a random order) as we place each piece of the puzzle onto the canvas
     // Note: I find 'while' loops cleaner to read than for loops
 	function init(){
-        canvas.removeEventListener("click", init, false);
-        canvas.removeEventListener("touchstart", init, false);
+        canvas.removeEventListener(eventsMap.select, init, false);
         clearCanvas();
         
         // Remove shadow (otherwise all puzzle pieces would get shadow applied to them)
@@ -182,10 +198,8 @@
         };
         
         // Let the user interact with the interface
-        canvas.addEventListener("mousedown", checkDrag, false);
-        canvas.addEventListener("touchstart", checkDrag, false);
-        canvas.addEventListener("mouseup", dontDrag, false);
-        canvas.addEventListener("touchend", dontDrag, false);
+        canvas.addEventListener(eventsMap.down, checkDrag, false);
+        canvas.addEventListener(eventsMap.up, dontDrag, false); // Note: this event gets triggered initially *before* the user interacts with the puzzle pieces. Do not know how though. It doesnt affect the game but doesnt seem right that it should do this.
 	}
 	
 	function highlightEmptySpace(){
@@ -236,8 +250,7 @@
         
         // I use an event object rather than specifying a listener because I want to be able to pass through extra arguments to the listener.
         // I could have used an anonymous function to wrap call to 'dragPiece' and pass through arguments that way, but then you can't remove a listener when it's set-up via an anonymous function
-        dragCanvas.addEventListener("mousemove", eventObject, false);
-        dragCanvas.addEventListener("touchmove", eventObject, false);
+        dragCanvas.addEventListener(eventsMap.move, eventObject, false);
 	}
 	
 	function dragPiece (e, selected_piece) {
@@ -274,8 +287,7 @@
             // hide the drag canvas by removing 'is-active' class
             // then update co-ordinates
             // call stopDrag() to reset interface for next interaction
-            dragCanvas.removeEventListener("mousemove", eventObject, false);
-            dragCanvas.removeEventListener("touchmove", eventObject, false);
+            dragCanvas.removeEventListener(eventsMap.move, eventObject, false);
             context.drawImage(img, selected_piece.x, selected_piece.y, piece_width, piece_height, empty_space.x, empty_space.y, piece_width, piece_height);
             dragCanvas.className = "drag-canvas";
             selected_piece.drawnOnCanvasX = empty_space.x;
@@ -289,47 +301,36 @@
         }
 	}
 	
+	// This function is called when the user released their click (e.g. mouseup/touchend)
+	// The reason for that is so if the user clicks quickly then they obviously don't want to 'drag' the puzzle piece (they just want it to move itself) 
 	function dontDrag (e) {
-        drag = false; // this is used to indicate if the user wants to drag a piece or is doing a single click
-        nativeMouseUpTriggered = true;
+        drag = false;
+        upEventTriggered = true;
         
-        // This allows us to drag and drop multiple times in a row
-        // BUT requires the mouseup event to be fired (e.g. the user has to hold their mouse down until the piece is dropped)
-        if (justDragged && !drag) {
-            drag = true;
-            justDragged = false;
+        // on touch devices the switch to the 2nd canvas element (i.e. which we do for dragging purposes)
+        // means the focus falls from the puzzle piece and the user now has to press onto the device again for the puzzle
+        // piece to start following their touch again. That's rubbish, so we need to work around that happening.
+        // My solution is to trigger touchmove event immediately (but only if the 2nd canvas is visible - because we know this function has been called by a touch device losing focus)
+        if (dragCanvas.className === "drag-canvas is-active" && touchSupported) {
+            var event = doc.createEvent("TouchEvent");
+                event.initTouchEvent("touchmove", true, true);
+                dragCanvas.dispatchEvent(event);
         }
 	}
 	
 	function stopDrag(){
-        canvas.removeEventListener("mousemove", eventObject, false);
-        canvas.removeEventListener("touchmove", eventObject, false);
-        
+        canvas.removeEventListener(eventsMap.move, eventObject, false);
         resetOptions();
-        
-        justDragged = true;
-        
-        // If no native mouse event triggered Because we require the MouseUp event to be triggered we forceable do this using DOM Level 2 Events.
-        // BUT we can't check immediately for this variable because if the mouseup event is triggered it is normally done so AFTER the stopDrag function.
-        // So we need to wrap this check in an timeout to prevent it from running too quickly.
-        window.setTimeout(function(){
-            if (!nativeMouseUpTriggered) {
-                var evt = document.createEvent("MouseEvents");
-                    evt.initMouseEvent("mouseup", true, true);
-                canvas.dispatchEvent(evt);
-            }
-        }, 500);
 	}
 	
 	function checkDrag (e) {
-        canvas.removeEventListener("mousedown", checkDrag, false);
-        canvas.removeEventListener("touchstart", checkDrag, false);
+        canvas.removeEventListener(eventsMap.down, checkDrag, false);
         
-        // The variable 'nativeMouseUpTriggered' is used with the 'drag and drop' feature.
+        // The variable 'upEventTriggered' is used with the 'drag and drop' feature.
         // Because we have two canvas' the 'mouseup' event doesn't always fire.
         // I've worked around this by tracking if mouseup is triggered or not and if not I use DOM Level 2 event creation/dispatching.
         // But this means my variable for checking needs to be reset to false.
-        nativeMouseUpTriggered = false;
+        upEventTriggered = false;
         
         // Check if we are going to be dragging a puzzle piece or not
         // If the user still hasn't "released" their mouse-click/touch after 150ms then we'll start dragging
@@ -344,8 +345,7 @@
     
     function resetOptions(){
         // Re-apply the event listeners
-        canvas.addEventListener("mousedown", checkDrag, false);
-        canvas.addEventListener("touchstart", checkDrag, false);
+        canvas.addEventListener(eventsMap.down, checkDrag, false);
         
         // Make sure drag is reset to true so we can check whether the user wants to "drag & drop"
         drag = true;
@@ -479,9 +479,6 @@
 		                        empty_space.y = storeSelectedY;
 		                        
                                 resetOptions();
-                                
-                                justDragged = false; // because of issue with 'mouseup' firing AFTER drag finished we need to keep track of when we're moving piece normally or via a 'drag and drop'
-	                        	
                             } else {
                                 // Then redraw it into the empty space
                                 context.drawImage(img, piece_to_move.x, piece_to_move.y, piece_width, piece_height, pieceMovedX, pieceMovedY, piece_width, piece_height);
