@@ -180,12 +180,28 @@
             x: random_piece.drawnOnCanvasX,
             y: random_piece.drawnOnCanvasY
         };
-                
+        
         // Let the user interact with the interface
         canvas.addEventListener("mousedown", checkDrag, false);
         canvas.addEventListener("touchstart", checkDrag, false);
         canvas.addEventListener("mouseup", dontDrag, false);
         canvas.addEventListener("touchend", dontDrag, false);
+	}
+	
+	function highlightEmptySpace(){
+        // We need to first clear any 'highlight' already drawn in this empty space/
+        // This is because this function could be called multiple times 
+        // (as it's being referenced from within a mousemove/touchmove listener)
+        context.clearRect(empty_space.x, empty_space.y, piece_width, piece_height);
+        
+        context.beginPath();
+            context.rect(empty_space.x + 2, empty_space.y + 2, piece_width - 4, piece_height - 4);
+            context.fillStyle = "#C00";
+            context.fill();
+            context.lineWidth = 4;
+            context.strokeStyle = "yellow";
+            context.stroke();
+        context.closePath();
 	}
 	
 	function startDrag (e) {
@@ -229,17 +245,30 @@
         var eventX = e.offsetX || e.pageX, 
             eventY = e.offsetY || e.pageY,
             storeSelectedX = selected_piece.drawnOnCanvasX,
-            storeSelectedY = selected_piece.drawnOnCanvasY;
+            storeSelectedY = selected_piece.drawnOnCanvasY,
+            halfWidth = piece_width / 2,
+            halfHeight = piece_height / 2;
         
         // Remove the piece from the canvas before we start drawing it again
         dragCanvasContext.clearRect(global.user_positionX, global.user_positionY, piece_width, piece_height);
         
         // Update global mouse position
-        global.user_positionX = eventX - (piece_width / 2),
-        global.user_positionY = eventY - (piece_height / 2);
+        global.user_positionX = eventX - halfWidth,
+        global.user_positionY = eventY - halfHeight;
+        
+        // If a part of the dragged puzzle piece is over a small portion of the empty space (20px inside of the empty space) 
+        // then highlight the empty space so the user knows they can drop there (should be pretty obvious but never-the-less it's a nice indication)
+        if (global.user_positionX <= empty_space.x + (piece_width - 20) && 
+            global.user_positionY <= empty_space.y + (piece_height - 20) && 
+            global.user_positionY + piece_height >= empty_space.y + 20 && 
+            global.user_positionX + piece_width >= empty_space.x + 20) {
+            highlightEmptySpace();
+        } else {
+            context.clearRect(empty_space.x, empty_space.y, piece_width, piece_height);
+        }
         
         // Check if mouse is over the empty space or not
-        if ((eventX >= empty_space.x && eventX < (empty_space.x + piece_width)) && (eventY >= empty_space.y && eventY < (empty_space.y + piece_width))) {
+        if ((eventX >= empty_space.x && eventX < (empty_space.x + piece_width)) && (eventY >= empty_space.y && eventY < (empty_space.y + piece_height))) {
             // If it is then clear event listeners
             // re-draw puzzle piece in empty space (there is really only one space to drop the piece so we can force this 'drop' action)
             // hide the drag canvas by removing 'is-active' class
