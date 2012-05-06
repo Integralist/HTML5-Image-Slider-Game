@@ -14,3 +14,9 @@ h1 {
     font-size: 2em;
     margin-bottom: 0.5em;
 }
+
+.drag-canvas {
+    left: 0;
+    position: absolute;
+    top: 0;
+}

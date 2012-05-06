@@ -7,8 +7,9 @@ Works on mobile and desktop devices devices (using mouse and touch events).
 **Checkout the drag and drop branch - still being worked on**
 
 ##TODO (Bugs - "drag & drop" branch):
-* drag and drop co-ordinates are off slightly (so feel too jumpy)
-* Mobile devices aren't handling the drag and drop (once the drag canvas is positioned above the original canvas the touch interaction switches to the containing window and not the drag canvas?)
+* touch device issues:
+    * animation of pieces (on iPad only) isn't correct (e.g. clearRect) as you can see thin lines where puzzle piece not removed properly
+    * somehow prevent iOS devices from showing 'copy' tooltip when double-tapping from selected canvas 
 
 ##TODO:
 * Work out when all the pieces are in the correct place and signal to the user that the game is finished
