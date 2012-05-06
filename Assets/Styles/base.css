@@ -19,9 +19,4 @@ h1 {
     left: 0;
     position: absolute;
     top: 0;
-    z-index: -1;
-}
-
-.drag-canvas.is-active {
-    z-index: 0;
 }
