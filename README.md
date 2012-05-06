@@ -8,8 +8,6 @@ Works on mobile and desktop devices devices (using mouse and touch events).
 
 ##TODO (Bugs - "drag & drop" branch):
 * touch device issues:
-    * if I click and hold drag and drop then next click is ALWAYS a automated move (even if I want to drag and drop again) until I do a normal single click which resets values
-      this is because the mouseup event triggers right at the end so 'drag = false' gets set.
     * animation of pieces (on iPad only) isn't correct (e.g. clearRect) as you can see thin lines where puzzle piece not removed properly
     * somehow prevent iOS devices from showing 'copy' tooltip when double-tapping from selected canvas 
 

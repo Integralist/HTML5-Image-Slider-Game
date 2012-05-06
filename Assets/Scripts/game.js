@@ -29,6 +29,7 @@
         touchSupported = false,
         event_moving = false,
         upTriggered = false,
+        wasJustDragging = false,
         current_piece;
 	
 	// We have a set API for handling events that typically map to mouse events
@@ -224,10 +225,9 @@
 	}
 	
 	function putPieceBack(){
-		console.log("put back: (piece to draw) ", current_piece.x, current_piece.y);
-		console.log("put back: (where to draw) ", current_piece.drawnOnCanvasX, current_piece.drawnOnCanvasY);
 		clearCanvas(dragCanvas);
 		context.drawImage(img, current_piece.x, current_piece.y, piece_width, piece_height, current_piece.drawnOnCanvasX, current_piece.drawnOnCanvasY, piece_width, piece_height);
+		context.clearRect(empty_space.x, empty_space.y, piece_width, piece_height); // this is in case the user triggers the empty space to be highlighted, but the user fails to complete the dropping of the puzzle piece into the empty space
 		upTriggered = false;
 	}
 	
@@ -264,7 +264,6 @@
         
         // Keep track of move event
         event_moving = true;
-        console.log("(dragPiece) event_moving: ", event_moving);
 	}
 	
 	function dragPiece (e, selected_piece) {
@@ -303,7 +302,6 @@
             // call stopDrag() to reset interface for next interaction
             dragCanvas.removeEventListener(eventsMap.move, eventObject, false);
             event_moving = false;
-            console.log("(dragPiece successful drop) event_moving: ", event_moving);
             context.drawImage(img, selected_piece.x, selected_piece.y, piece_width, piece_height, empty_space.x, empty_space.y, piece_width, piece_height);
             selected_piece.drawnOnCanvasX = empty_space.x;
             selected_piece.drawnOnCanvasY = empty_space.y;
@@ -319,13 +317,11 @@
 	// This function is called when the user released their click (e.g. mouseup/touchend)
 	// The reason for that is so if the user clicks quickly then they obviously don't want to 'drag' the puzzle piece (they just want it to move itself) 
 	function toggleDragCheck (e) {
-		console.log("mouseup triggered which sets drag to false and upTriggered to true");
 		upTriggered = true;
 		
 		// If the user releases while piece is moving but the piece hasn't yet been placed then stop the drag
 		// And move the piece back into the empty space it came from
 		if (upTriggered && event_moving) {
-			console.log("weve set upTriggered & event_moving to false and are about to call stopDrag then putPieceBack");
 			upTriggered = false;
 			event_moving = false;
 			stopDrag();
@@ -333,13 +329,12 @@
 		} else {
 			drag = false;
 		}
-
 	}
 	
 	function stopDrag(){
-        console.log("stop drag called (removes mouse move event and calls resetOptions)");
         dragCanvas.removeEventListener(eventsMap.move, eventObject, false);
         dragCanvas.removeEventListener(eventsMap.up, toggleDragCheck, false); // this prevents 'release' being triggered and causing problems with users next interaction (e.g. if the user wants to 'drag' again - without this set they wouldn't be able to as the release causes toggleDragCheck to be called which sets drag = false!)
+        wasJustDragging = true;
         resetOptions();
 	}
 	
@@ -358,15 +353,18 @@
     }
     
     function resetOptions(){
-        console.log("resetOptions called, reapplies click event and sets drag to true");
-        // Re-apply the event listeners
-        dragCanvas.addEventListener(eventsMap.down, checkDrag, false);
-        
-        // We need to wait a fraction of a section before re-applying the up listener
-        // This is because otherwise it'll be called immediately and the next user interaction will be broken
-        window.setTimeout(function(){
-	        dragCanvas.addEventListener(eventsMap.up, toggleDragCheck, false);
-        }, 100);
+	    // We only want to execute a delay for re-applying the listeners when the prior action was a 'drag and drop'
+        if (wasJustDragging) {
+	        // Re-apply the event listeners.
+	        // But wait half a second before re-applying.
+		    // This is because otherwise it'll be called immediately and the next user interaction will be broken
+		    window.setTimeout(function(){
+		        dragCanvas.addEventListener(eventsMap.down, checkDrag, false);
+		        dragCanvas.addEventListener(eventsMap.up, toggleDragCheck, false);
+		    }, 500);
+		} else {
+			dragCanvas.addEventListener(eventsMap.down, checkDrag, false);
+		}
         
         // Make sure drag is reset to true so we can check whether the user wants to "drag & drop"
         drag = true;
@@ -404,6 +402,9 @@
         
         // Find the piece that was clicked on
         selected_piece = findSelectedPuzzlePiece(i, eventX, eventY);
+        
+        // We're resetting to false now we're moving the puzzle piece automatically
+        wasJustDragging = false;
         
         // If no piece found (or user clicked on 'empty space') then don't continue
         // But we need to reset some settings ready for next user interaction
