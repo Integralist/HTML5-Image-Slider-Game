@@ -30,7 +30,9 @@
         event_moving = false,
         upTriggered = false,
         wasJustDragging = false,
-        current_piece;
+        current_piece,
+        removed_piece,
+        random_number;
 	
 	// We have a set API for handling events that typically map to mouse events
 	// But if the device supports touch events then we'll use those instead
@@ -41,7 +43,7 @@
             down: "touchstart",
             up: "touchend",
             move: "touchmove"
-        }
+        };
     }
 	
 	img.src = "Assets/Images/photo.jpg";	
@@ -88,7 +90,7 @@
         
         // Initialise the game
         dragCanvas.addEventListener(eventsMap.select, init, false);
-	};
+	}
 	
 	// We first, remove event handler(s) and then we clear the canvas 
 	// Then we loop through all the puzzle pieces and build a map of co-ordinates
@@ -107,9 +109,7 @@
             y_coord = 0,
             counter = 0,
             loop_length = canvas_grid * canvas_grid,
-            random_piece,
-            random_number,
-            removed_piece;
+            random_piece;
         
         // I didn't want to have to repeat the majority of the loop code twice.
         // So I wrapped the loop in a function and then branch off when necessary.
@@ -240,7 +240,7 @@
         
         // The user could be using a 'mouse' or 'touch' device so I named these global properties very generically
         // The reason they're global is so that we can reset them from outside this function
-		global.user_positionX = eventX - (piece_width / 2),
+		global.user_positionX = eventX - (piece_width / 2);
         global.user_positionY = eventY - (piece_height / 2);
         
         eventObject = {
@@ -279,7 +279,7 @@
         dragCanvasContext.clearRect(global.user_positionX, global.user_positionY, piece_width, piece_height);
         
         // Update global mouse position
-        global.user_positionX = eventX - halfWidth,
+        global.user_positionX = eventX - halfWidth;
         global.user_positionY = eventY - halfHeight;
         
         // If a part of the dragged puzzle piece is over a small portion of the empty space (20px inside of the empty space) 
@@ -336,6 +336,9 @@
         dragCanvas.removeEventListener(eventsMap.up, toggleDragCheck, false); // this prevents 'release' being triggered and causing problems with users next interaction (e.g. if the user wants to 'drag' again - without this set they wouldn't be able to as the release causes toggleDragCheck to be called which sets drag = false!)
         wasJustDragging = true;
         resetOptions();
+        if (checkIfGameFinished()) {
+        	drawBackMissingPiece();
+        }
 	}
 	
 	function checkDrag (e) {
@@ -381,6 +384,35 @@
                 return puzzle_randomised[i];
             }
         }
+    }
+    
+    function checkIfGameFinished(){
+	    // Insert the removed puzzle piece back into a copy of the current state of the puzzle Array
+	    // We don't want to insert it back into the actual puzzle_randomised Array in case the game isn't over
+	    // So we'll copy that Array and insert into the copied Array and we'll check against that
+	    
+	    var copied_puzzle_randomised = puzzle_randomised.slice(0);
+	    	copied_puzzle_randomised.splice(random_number, 0, removed_piece[0]);
+	    	complete = false;
+	    
+	    complete = copied_puzzle_randomised.every(function (item, index, array) {
+		    if (item.drawnOnCanvasX === item.x && item.drawnOnCanvasY === item.y) {
+		    	return true;
+		    } 
+		    // The final piece is actually the missing piece so we check the x/y against the empty_space x/y
+		    else if (item.x === empty_space.x && item.y === empty_space.y) {
+			    return true;
+			} else {
+			    return false;
+		    }
+	    });
+	    
+	    return complete;
+    }
+    
+    function drawBackMissingPiece(){
+	    context.drawImage(img, empty_space.x, empty_space.y, piece_width, piece_height, empty_space.x, empty_space.y, piece_width, piece_height);
+	    alert("Congratulations! The game is complete");
     }
     
     function movePiece (e) {
@@ -501,6 +533,10 @@
 		                        empty_space.y = storeSelectedY;
 		                        
                                 resetOptions();
+                                
+                                if (checkIfGameFinished()) {
+	                                drawBackMissingPiece();
+	                            }
                             } else {
                                 // Then redraw it into the empty space
                                 context.drawImage(img, piece_to_move.x, piece_to_move.y, piece_width, piece_height, pieceMovedX, pieceMovedY, piece_width, piece_height);
@@ -522,4 +558,4 @@
         }
 	}
 	
-}(this))
+}(this));

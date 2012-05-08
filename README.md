@@ -8,11 +8,7 @@ Works on mobile and desktop devices devices (using mouse and touch events).
 
 ##TODO (Bugs):
 * touch device issues:
-    * animation of pieces (on iPad only) isn't correct (e.g. clearRect) as you can see thin lines where puzzle piece not removed properly
-
-##TODO:
-* Work out when all the pieces are in the correct place and signal to the user that the game is finished
-* JShint the shiznit out of the code (hopefully wont be too tragic)
+    * animation of pieces (on iOS) isn't correct (e.g. clearRect) as you can see thin lines where puzzle piece not removed properly
 	
 ##TODO (feature):
 * Create handle icons (or think up unique way to allow) for whole rows/cols to be dragged at once
