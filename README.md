@@ -9,7 +9,6 @@ Works on mobile and desktop devices devices (using mouse and touch events).
 ##TODO (Bugs):
 * touch device issues:
     * animation of pieces (on iPad only) isn't correct (e.g. clearRect) as you can see thin lines where puzzle piece not removed properly
-    * somehow prevent iOS devices from showing 'copy' tooltip when double-tapping from selected canvas 
 
 ##TODO:
 * Work out when all the pieces are in the correct place and signal to the user that the game is finished
