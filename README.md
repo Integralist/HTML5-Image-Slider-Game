@@ -4,8 +4,6 @@ Split image into puzzle pieces (and display in random order) and let user move p
 
 Works on mobile and desktop devices devices (using mouse and touch events).
 
-**Checkout the drag and drop branch - still being worked on**
-
 ##TODO (Bugs):
 * touch device issues:
     * animation of pieces (on iOS) isn't correct (e.g. clearRect) as you can see thin lines where puzzle piece not removed properly
