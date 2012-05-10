@@ -1,9 +1,9 @@
 (function (global) {
 	
-	// Set-up variables that will be used throughout this script.
 	// Because of variable 'hoisting' I like to keep all vars as near to the top of the program as possible.
 	var doc = global.document,
-	    canvas = doc.getElementById("game"),
+		// Following variables are related to the creation of the canvas' and specific configuration
+		canvas = doc.getElementById("game"),
 		context = canvas.getContext("2d"),
 		dragCanvas = doc.createElement("canvas"),
 		dragCanvasContext = dragCanvas.getContext("2d"),
@@ -15,24 +15,27 @@
 		piece_width,
 		opening_message = "Start Game",
 		text_dimensions = context.measureText(opening_message),
+		// Following variables are related to the puzzle pieces
 		puzzle_squares = [],
 		puzzle_randomised,
 		empty_space,
+		current_piece,
+		removed_piece,
+		random_number,
+		// Following variables are related to moving puzzle pieces around
 		drag = true,
 		eventObject,
 		eventsMap  = {
-            select: "click",
-            down: "mousedown",
-            up: "mouseup",
-            move: "mousemove"
-        },
-        touchSupported = false,
-        event_moving = false,
-        upTriggered = false,
-        wasJustDragging = false,
-        current_piece,
-        removed_piece,
-        random_number;
+			select: "click",
+			down: "mousedown",
+			up: "mouseup",
+			move: "mousemove"
+		},
+		touchSupported = false,
+		event_moving = false,
+		upTriggered = false,
+		wasJustDragging = false,
+		allow_input = doc.getElementById("allow");
 	
 	// We have a set API for handling events that typically map to mouse events
 	// But if the device supports touch events then we'll use those instead
@@ -234,9 +237,26 @@
 	function startDrag (e) {
         var selected_piece,
             i = puzzle_randomised.length,
+            j = canvas_grid,
+            potential_spaces,
             // Firefox only recognised properties pageX/Y
             eventX = e.offsetX || e.pageX, 
             eventY = e.offsetY || e.pageY;
+        
+        function setUp(){
+	        // Remove the piece from the canvas now we know which piece it is
+	        context.clearRect(selected_piece.drawnOnCanvasX, selected_piece.drawnOnCanvasY, piece_width, piece_height);
+	        
+	        // Now draw the selected piece onto the drag canvas
+	        dragCanvasContext.drawImage(img, selected_piece.x, selected_piece.y, piece_width, piece_height, global.user_positionX, global.user_positionY, piece_width, piece_height);
+	        
+	        // I use an event object rather than specifying a listener because I want to be able to pass through extra arguments to the listener.
+	        // I could have used an anonymous function to wrap call to 'dragPiece' and pass through arguments that way, but then you can't remove a listener when it's set-up via an anonymous function
+	        dragCanvas.addEventListener(eventsMap.move, eventObject, false);
+	        
+	        // Keep track of move event
+	        event_moving = true;
+        }
         
         // The user could be using a 'mouse' or 'touch' device so I named these global properties very generically
         // The reason they're global is so that we can reset them from outside this function
@@ -252,18 +272,60 @@
         // Find the piece that was clicked on
         current_piece = selected_piece = findSelectedPuzzlePiece(i, eventX, eventY);
         
-        // Remove the piece from the canvas now we know which piece it is
-        context.clearRect(selected_piece.drawnOnCanvasX, selected_piece.drawnOnCanvasY, piece_width, piece_height);
-        
-        // Now draw the selected piece onto the drag canvas
-        dragCanvasContext.drawImage(img, selected_piece.x, selected_piece.y, piece_width, piece_height, global.user_positionX, global.user_positionY, piece_width, piece_height);
-        
-        // I use an event object rather than specifying a listener because I want to be able to pass through extra arguments to the listener.
-        // I could have used an anonymous function to wrap call to 'dragPiece' and pass through arguments that way, but then you can't remove a listener when it's set-up via an anonymous function
-        dragCanvas.addEventListener(eventsMap.move, eventObject, false);
-        
-        // Keep track of move event
-        event_moving = true;
+        // Check to see if we want to allow illegal drag and drop (i.e. moving of a piece that's not immediately around the empty space)
+        if (!allow_input.checked) {
+	        
+	        // Move piece into available empty space.
+	        // There are 4 potential spaces around the selected piece which it can move in (diagonal doesn't count - as we're not worrying about the 'drag and drop' yet)
+	        // So loop through each of them checking to see if any of their co-ordinates match the empty space
+	        // If they do match then move the selected piece into that space and set the selected piece to be the new empty space
+	        potential_spaces = [
+	        	{
+	        		x: selected_piece.drawnOnCanvasX,
+	        		y: selected_piece.drawnOnCanvasY - piece_height
+	        	},
+	        	{
+	        		x: selected_piece.drawnOnCanvasX - piece_width,
+	        		y: selected_piece.drawnOnCanvasY
+	        	},
+	        	{
+	        		x: selected_piece.drawnOnCanvasX + piece_width,
+	        		y: selected_piece.drawnOnCanvasY
+	        	},
+	        	{
+	        		x: selected_piece.drawnOnCanvasX,
+	        		y: selected_piece.drawnOnCanvasY + piece_height
+	        	}
+	        ];
+	        
+	        // Check if we can move the selected piece into the empty space (e.g. can only move selected piece up, down, left and right, not diagonally)
+	        // We use a labelled statement to break out of the outer loop once a match is found within the inner loop
+	        outer_loop:
+	        while (j--) {
+	        	if (potential_spaces[j].x === empty_space.x && potential_spaces[j].y === empty_space.y) {
+	        		// We then loop through the shuffled puzzle order looking for the piece that was selected by the user
+	        		while (i--) {
+	        			if (puzzle_randomised[i].drawnOnCanvasX === selected_piece.drawnOnCanvasX && 
+	        				puzzle_randomised[i].drawnOnCanvasY === selected_piece.drawnOnCanvasY) {
+	         				
+	         				selected_piece = puzzle_randomised[i];
+	         				setUp();
+	         				break outer_loop;
+	         				
+	        			}
+	        		}
+	        	}
+	        }
+	        
+	        // User must have clicked on an item that couldn't have been moved
+	        if (j < 0) {
+		        event_moving = true; // this is so when the mouseup/touchend event is triggered we can catch this error out inside toggleDragCheck() which otherwise would reset drag=false and cause problems with the user's next interaction
+	        	resetOptions();
+	        }
+	        
+        } else {	        
+	        setUp();	        
+        }
 	}
 	
 	function dragPiece (e, selected_piece) {
@@ -417,7 +479,7 @@
     
     function movePiece (e) {
         var i = puzzle_randomised.length,
-            j = 4,
+            j = canvas_grid,
             selected_piece,
             potential_spaces,
             // Firefox only recognised properties pageX/Y
