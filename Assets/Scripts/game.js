@@ -1,8 +1,8 @@
 (function (global) {
 	
 	// Because of variable 'hoisting' I like to keep all vars as near to the top of the program as possible.
+	// Following variables are related to the creation of the canvas' and specific configuration
 	var doc = global.document,
-		// Following variables are related to the creation of the canvas' and specific configuration
 		canvas = doc.getElementById("game"),
 		context = canvas.getContext("2d"),
 		dragCanvas = doc.createElement("canvas"),
@@ -15,14 +15,14 @@
 		piece_width,
 		opening_message = "Start Game",
 		text_dimensions = context.measureText(opening_message),
-		// Following variables are related to the puzzle pieces
+	// Following variables are related to the puzzle pieces
 		puzzle_squares = [],
 		puzzle_randomised,
 		empty_space,
 		current_piece,
 		removed_piece,
 		random_number,
-		// Following variables are related to moving puzzle pieces around
+	// Following variables are related to moving puzzle pieces around
 		drag = true,
 		eventObject,
 		eventsMap  = {
