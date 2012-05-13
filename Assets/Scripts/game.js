@@ -1,3 +1,39 @@
+// Polyfill for requestAnimationFrame which I've modified from Paul Irish's original
+// See: http://paulirish.com/2011/requestanimationframe-for-smart-animating/
+(function (global) {
+	var lastTime = 0,
+		vendors = ['ms', 'moz', 'webkit', 'o'];
+	
+	for (var x = 0; x < vendors.length && !global.requestAnimationFrame; ++x) {
+		global.requestAnimationFrame = global[vendors[x]+'RequestAnimationFrame'];
+		global.cancelAnimationFrame = global[vendors[x]+'CancelAnimationFrame'] || global[vendors[x]+'CancelRequestAnimationFrame'];
+	}
+	
+	global.nativeRAF = !!global.requestAnimationFrame; // store reference to whether it was natively supported or not (later we need to change increment value depending on if setInterval or requestAnimationFrame is used)
+
+	if (!global.requestAnimationFrame) {
+		global.requestAnimationFrame = function (callback, element) {
+			
+			var currTime = new Date().getTime(),
+				timeToCall = Math.max(0, 16 - (currTime - lastTime)),
+				id = global.setTimeout(function(){ 
+					callback(currTime + timeToCall);
+				}, timeToCall);
+			
+			lastTime = currTime + timeToCall;
+			
+			return id;
+			
+		};
+	}
+
+	if (!global.cancelAnimationFrame) {
+		global.cancelAnimationFrame = function (id) {
+			clearTimeout(id);
+		};
+	}
+}(this));
+
 (function (global) {
 	
 	// Because of variable 'hoisting' I like to keep all vars as near to the top of the program as possible.
@@ -423,7 +459,7 @@
 	        // Re-apply the event listeners.
 	        // But wait half a second before re-applying.
 		    // This is because otherwise it'll be called immediately and the next user interaction will be broken
-		    window.setTimeout(function(){
+		    global.setTimeout(function(){
 		        dragCanvas.addEventListener(eventsMap.down, checkDrag, false);
 		        dragCanvas.addEventListener(eventsMap.up, toggleDragCheck, false);
 		    }, 500);
@@ -487,12 +523,13 @@
             eventY = e.offsetY || e.pageY,
             pieceMovedX,
             pieceMovedY,
-            moveAmount = 10,
+            moveAmount = (nativeRAF) ? 20 : 10, // setInterval worked fine when moving by 10 but rAF could do with up'ing the number of pixels per movement
             interval,
             coord,
             direction, 
             storeSelectedX, 
-            storeSelectedY;
+            storeSelectedY,
+            foundPieceForAnimation;
         
         // Find the piece that was clicked on
         selected_piece = findSelectedPuzzlePiece(i, eventX, eventY);
@@ -530,6 +567,74 @@
             }
         ];
         
+        function raf(){
+	        // We call requestAnimationFrame as it was modelled on setTimeout rather than setInterval
+	        interval = global.requestAnimationFrame(raf);
+	        
+	        // Start the actual animation
+	        animate(foundPieceForAnimation);
+        }
+        
+        function animate (piece_to_move) {
+	        
+	        // Clear the space where the selected piece is currently
+        	context.clearRect(pieceMovedX, pieceMovedY, piece_width, piece_height);
+
+        	// We don't want to move the x/y co-ordinates if they're already the same
+        	if (pieceMovedX !== empty_space.x) {
+        		coord = "x";
+        		// Check which direction the piece needs to move in
+        		if (pieceMovedX > empty_space.x) {
+        			direction = 0;
+        			pieceMovedX -= moveAmount;
+        		} else {
+        			direction = 1;
+        			pieceMovedX += moveAmount;
+        		}
+
+        	} else if (pieceMovedY !== empty_space.y) {
+        		coord = "y";
+        		// Check which direction the piece needs to move in
+        		if (pieceMovedY > empty_space.y) {
+        			direction = 0;
+        			pieceMovedY -= moveAmount;
+        		} else {
+        			direction = 1;
+        			pieceMovedY += moveAmount;
+        		}
+        	}
+        	
+        	if (direction && coord === "x" && pieceMovedX >= empty_space.x || 
+        		direction && coord === "y" && pieceMovedY >= empty_space.y || 
+        		!direction && coord === "x" && pieceMovedX <= empty_space.x || 
+        		!direction && coord === "y" && pieceMovedY <= empty_space.y) {
+
+				global.cancelAnimationFrame(interval);
+				
+				// Draw one last time directly into the empty space
+        		// Note: I was finding that because of the loop interation sometimes the y position would be -2 or 2+ but I decided that near enough the position drawing directly into the empty space the user wont even notice
+        		context.drawImage(img, piece_to_move.x, piece_to_move.y, piece_width, piece_height, empty_space.x, empty_space.y, piece_width, piece_height);
+
+        		// Also update the drawnOnCanvasX/Y properties so they reflect the last place on the canvas they were drawn
+        		piece_to_move.drawnOnCanvasX = empty_space.x;
+        		piece_to_move.drawnOnCanvasY = empty_space.y;
+
+        		// Reset the empty space co-ordinates to be where the image we've just moved was.
+        		empty_space.x = storeSelectedX;
+        		empty_space.y = storeSelectedY;
+
+        		resetOptions();
+
+        		if (checkIfGameFinished()) {
+        			drawBackMissingPiece();
+        		}
+        	} else {
+	        	// Then redraw it into the empty space
+        		context.drawImage(img, piece_to_move.x, piece_to_move.y, piece_width, piece_height, pieceMovedX, pieceMovedY, piece_width, piece_height);
+        	}
+
+        }
+        
         // Check if we can move the selected piece into the empty space (e.g. can only move selected piece up, down, left and right, not diagonally)
         while (j--) {
             if (potential_spaces[j].x === empty_space.x && potential_spaces[j].y === empty_space.y) {
@@ -546,65 +651,9 @@
                         storeSelectedX = selected_piece.drawnOnCanvasX;
                         storeSelectedY = selected_piece.drawnOnCanvasY;
                         
-                        interval = global.setInterval(function animate (piece_to_move) {
-                        
-                            // Clear the space where the selected piece is currently
-                            context.clearRect(pieceMovedX, pieceMovedY, piece_width, piece_height);
-                        	
-                        	// We don't want to move the x/y co-ordinates if they're already the same
-	                        if (pieceMovedX !== empty_space.x) {
-	                        	coord = "x";
-	                        	// Check which direction the piece needs to move in
-	                        	if (pieceMovedX > empty_space.x) {
-	                        		direction = 0;
-	                        		pieceMovedX -= moveAmount;
-	                        	} else {
-	                        		direction = 1;
-	                        		pieceMovedX += moveAmount;
-	                        	}
-	                        	
-	                        } else if (pieceMovedY !== empty_space.y) {
-	                        	coord = "y";
-	                        	// Check which direction the piece needs to move in
-	                        	if (pieceMovedY > empty_space.y) {
-	                        		direction = 0;
-	                        		pieceMovedY -= moveAmount;
-	                        	} else {
-	                        		direction = 1;
-	                        		pieceMovedY += moveAmount;
-	                        	}
-	                        }
-	                        
-	                        if (direction && coord === "x" && pieceMovedX >= empty_space.x || 
-	                        	direction && coord === "y" && pieceMovedY >= empty_space.y || 
-	                        	!direction && coord === "x" && pieceMovedX <= empty_space.x || 
-	                        	!direction && coord === "y" && pieceMovedY <= empty_space.y) {
-	                        	
-	                        	global.clearInterval(interval);
-	                        	
-	                        	// Draw one last time directly into the empty space
-	                        	// Note: I was finding that because of the loop interation sometimes the y position would be -2 or 2+ but I decided that near enough the position drawing directly into the empty space the user wont even notice
-                                context.drawImage(img, piece_to_move.x, piece_to_move.y, piece_width, piece_height, empty_space.x, empty_space.y, piece_width, piece_height);
-	                        	
-	                        	// Also update the drawnOnCanvasX/Y properties so they reflect the last place on the canvas they were drawn
-		                        piece_to_move.drawnOnCanvasX = empty_space.x;
-		                        piece_to_move.drawnOnCanvasY = empty_space.y;
-		                        
-		                        // Reset the empty space co-ordinates to be where the image we've just moved was.
-		                        empty_space.x = storeSelectedX;
-		                        empty_space.y = storeSelectedY;
-		                        
-                                resetOptions();
-                                
-                                if (checkIfGameFinished()) {
-	                                drawBackMissingPiece();
-	                            }
-                            } else {
-                                // Then redraw it into the empty space
-                                context.drawImage(img, piece_to_move.x, piece_to_move.y, piece_width, piece_height, pieceMovedX, pieceMovedY, piece_width, piece_height);
-                            }
-                        	
-                        }, 6, puzzle_randomised[i]);
+                        // Animate the piece into place
+                        foundPieceForAnimation = puzzle_randomised[i]; // had to store in var rather than pass as an argument as requestAnimationFrame doesn't have any way to pass an argument :-(
+                        raf();
                                                 
                         break;
                     }
