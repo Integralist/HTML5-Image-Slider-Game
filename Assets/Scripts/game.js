@@ -244,7 +244,7 @@
         
         // Let the user interact with the interface
         dragCanvas.addEventListener(eventsMap.down, checkDrag, false);
-        dragCanvas.addEventListener(eventsMap.up, toggleDragCheck, false); // TODO: look into why this event gets triggered *before* the user interacts with the puzzle pieces. It doesnt affect the game but doesnt seem right that it should do this.
+        dragCanvas.addEventListener(eventsMap.up, toggleDragCheck, false);
 	}
 	
 	function highlightEmptySpace(){
