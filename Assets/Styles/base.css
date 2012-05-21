@@ -22,9 +22,20 @@ h1 {
 }
 
 canvas {
-    -webkit-user-select: none; /* prevents the 'copy' option > http://www.bernskiold.com/2011/02/02/tips-and-tricks-for-ios-web-development/ */
+    /* Prevent 'copy' option > http://www.bernskiold.com/2011/02/02/tips-and-tricks-for-ios-web-development/ */
+    -webkit-user-select: none;
        -moz-user-select: none;
             user-select: none;
+    
+    /* 
+        Microsoft have their own variation...
+        
+        -ms-touch-action: none;
+        
+        ...but without having access to a Windows Phone 7 I'm not 100% sure if this will have the intended result.
+        
+        See: http://blogs.msdn.com/b/ie/archive/2012/04/20/guidelines-for-building-touch-friendly-sites.aspx
+    */
 }
 
 .allow {
