@@ -46,7 +46,8 @@
 		img = new Image(),
 		canvas_height,
 		canvas_width,
-		canvas_grid = 4, // e.g. 4 cols x 4 rows
+		//canvas_grid = 4, // e.g. 4 cols x 4 rows
+		canvas_grid = 3,// I change this to try the grid fix
 		piece_height,
 		piece_width,
 		opening_message = "Start Game",
@@ -273,7 +274,6 @@
 	function startDrag (e) {
         var selected_piece,
             i = puzzle_randomised.length,
-            j = canvas_grid,
             potential_spaces,
             // Firefox only recognised properties pageX/Y
             eventX = e.offsetX || e.pageX, 
@@ -333,7 +333,7 @@
 	        		y: selected_piece.drawnOnCanvasY + piece_height
 	        	}
 	        ];
-	        
+	        var j = potential_spaces.length;
 	        // Check if we can move the selected piece into the empty space (e.g. can only move selected piece up, down, left and right, not diagonally)
 	        // We use a labelled statement to break out of the outer loop once a match is found within the inner loop
 	        outer_loop:
@@ -515,7 +515,6 @@
     
     function movePiece (e) {
         var i = puzzle_randomised.length,
-            j = canvas_grid,
             selected_piece,
             potential_spaces,
             // Firefox only recognised properties pageX/Y
@@ -566,7 +565,7 @@
                 y: selected_piece.drawnOnCanvasY + piece_height
             }
         ];
-        
+        var j = potential_spaces.length;
         function raf(){
 	        // We call requestAnimationFrame as it was modelled on setTimeout rather than setInterval
 	        interval = global.requestAnimationFrame(raf);
